@@ -1,7 +1,11 @@
+#[cfg(all(
+    any(target_os = "linux", target_os = "android"),
+    any(target_arch = "x86_64", target_arch = "aarch64")
+))]
 use core::arch::asm;
 
 #[cfg(not(all(
-    target_os = "linux",
+    any(target_os = "linux", target_os = "android"),
     any(target_arch = "x86_64", target_arch = "aarch64")
 )))]
 compile_error!("Only works on linux x86_64 or linux aarch64");
@@ -202,12 +206,24 @@ macro_rules! syscall6 {
     }
 }
 
-#[cfg(all(target_arch = "aarch64", target_os = "linux"))]
+#[cfg(all(
+    target_arch = "aarch64",
+    any(target_os = "linux", target_os = "android")
+))]
 syscall0!(exit, 93);
-#[cfg(all(target_arch = "aarch64", target_os = "linux"))]
+#[cfg(all(
+    target_arch = "aarch64",
+    any(target_os = "linux", target_os = "android")
+))]
 syscall3!(write, 64);
 
-#[cfg(all(target_arch = "x86_64", target_os = "linux"))]
+#[cfg(all(
+    target_arch = "x86_64",
+    any(target_os = "linux", target_os = "android")
+))]
 syscall0!(exit, 60);
-#[cfg(all(target_arch = "x86_64", target_os = "linux"))]
+#[cfg(all(
+    target_arch = "x86_64",
+    any(target_os = "linux", target_os = "android")
+))]
 syscall3!(write, 1);

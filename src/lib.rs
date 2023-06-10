@@ -1,4 +1,3 @@
-#![feature(lang_items)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "core")]
@@ -94,11 +93,6 @@ pub use syscall::*;
 
 #[cfg(not(feature = "std"))]
 use core::panic::PanicInfo;
-
-#[no_mangle]
-#[lang = "eh_personality"]
-#[cfg(not(feature = "std"))]
-pub extern "C" fn eh_personality() {}
 
 #[panic_handler]
 #[cfg(not(feature = "std"))]
