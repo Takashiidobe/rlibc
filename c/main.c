@@ -7,5 +7,7 @@ int main() {
   assert(add(10, 10) == 20);
   const char* s = "12";
   assert(strlen(s) == 2);
+  test_vec();
   print("hello\n");
+  format();
 }

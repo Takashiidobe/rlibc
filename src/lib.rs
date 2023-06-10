@@ -7,6 +7,9 @@ extern crate core;
 #[cfg(feature = "std")]
 extern crate std;
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 /// `long long int`
 pub type CLongLong = ::core::ffi::c_longlong;
 
@@ -33,6 +36,15 @@ pub extern "C" fn abs(i: CInt) -> CInt {
     i.abs()
 }
 
+#[cfg(not(target_env = "msvc"))]
+#[cfg(feature = "alloc")]
+use tikv_jemallocator::Jemalloc;
+
+#[cfg(not(target_env = "msvc"))]
+#[cfg(feature = "alloc")]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
+
 #[no_mangle]
 pub extern "C" fn add(a: u32, b: u32) -> u32 {
     a + b
@@ -41,6 +53,25 @@ pub extern "C" fn add(a: u32, b: u32) -> u32 {
 #[no_mangle]
 pub extern "C" fn isupper(c: CInt) -> bool {
     (c as u32 - b'A' as u32) < 26
+}
+
+#[cfg(feature = "alloc")]
+use alloc::{string::String, vec, vec::Vec, fmt};
+
+#[cfg(feature = "alloc")]
+use libc_print::std_name::{println, eprintln, dbg};
+
+#[no_mangle]
+#[cfg(feature = "alloc")]
+pub extern "C" fn test_vec() {
+    let mut v = vec![1,2,3];
+    let res = v.pop();
+}
+
+#[no_mangle]
+#[cfg(feature = "alloc")]
+pub extern "C" fn format()  {
+    println!("Hi");
 }
 
 #[no_mangle]
@@ -56,14 +87,6 @@ pub unsafe extern "C" fn strlen(mut s: *const CChar) -> usize {
 #[no_mangle]
 pub unsafe extern "C" fn print(print_str: *const CChar) {
     write(1usize, print_str as usize, unsafe { strlen(print_str) });
-}
-
-#[no_mangle]
-pub extern "C" fn vec() {
-    use heapless::Vec;
-    let mut xs: Vec<u8, 8> = Vec::new();
-    xs.push(42).unwrap();
-    xs.pop();
 }
 
 pub mod syscall;
