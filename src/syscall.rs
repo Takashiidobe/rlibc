@@ -12,6 +12,7 @@ compile_error!("Only works on linux x86_64 or linux aarch64");
 
 macro_rules! syscall0 {
     ($name:ident, $nr:expr) => {
+        #[no_mangle]
         pub extern "C" fn $name() {
             unsafe {
                 #[cfg(target_arch = "aarch64")]
@@ -34,20 +35,21 @@ macro_rules! syscall0 {
 
 macro_rules! syscall1 {
     ($name:ident, $nr:expr) => {
-        pub extern "C" fn $name(arg1: impl Into<usize>) {
+        #[no_mangle]
+        pub extern "C" fn $name(arg1: usize) {
             unsafe {
                 #[cfg(target_arch = "aarch64")]
                 asm!(
                     "mov x0, #0",
                     "svc #0",
                     in("w8") $nr,
-                    in("x0") arg1.into(),
+                    in("x0") arg1,
                 );
                 #[cfg(target_arch = "x86_64")]
                 asm!(
                     "syscall",
                     in("rax") $nr,
-                    in("rdi") arg1.into(),
+                    in("rdi") arg1,
                 );
                 #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
                 compile_error!("not implemented");
@@ -58,22 +60,23 @@ macro_rules! syscall1 {
 
 macro_rules! syscall2 {
     ($name:ident, $nr:expr) => {
-        pub extern "C" fn $name(arg1: impl Into<usize>, arg2: impl Into<usize>) {
+        #[no_mangle]
+        pub extern "C" fn $name(arg1: usize, arg2: usize) {
             unsafe {
                 #[cfg(target_arch = "aarch64")]
                 asm!(
                     "mov x0, #0",
                     "svc #0",
                     in("w8") $nr,
-                    in("x0") arg1.into(),
-                    in("x1") arg2.into(),
+                    in("x0") arg1,
+                    in("x1") arg2,
                 );
                 #[cfg(target_arch = "x86_64")]
                 asm!(
                     "syscall",
                     in("rax") $nr,
-                    in("rdi") arg1.into(),
-                    in("rsi") arg2.into(),
+                    in("rdi") arg1,
+                    in("rsi") arg2,
                 );
                 #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
                 compile_error!("not implemented");
@@ -84,24 +87,25 @@ macro_rules! syscall2 {
 
 macro_rules! syscall3 {
     ($name:ident, $nr:expr) => {
-        pub extern "C" fn $name(arg1: impl Into<usize>, arg2: impl Into<usize>, arg3: impl Into<usize>) {
+        #[no_mangle]
+        pub extern "C" fn $name(arg1: usize, arg2: usize, arg3: usize) {
             unsafe {
                 #[cfg(target_arch = "aarch64")]
                 asm!(
                     "mov x0, #0",
                     "svc #0",
                     in("w8") $nr,
-                    in("x0") arg1.into(),
-                    in("x1") arg2.into(),
-                    in("x2") arg3.into(),
+                    in("x0") arg1,
+                    in("x1") arg2,
+                    in("x2") arg3,
                 );
                 #[cfg(target_arch = "x86_64")]
                 asm!(
                     "syscall",
                     in("rax") $nr,
-                    in("rdi") arg1.into(),
-                    in("rsi") arg2.into(),
-                    in("rdx") arg3.into(),
+                    in("rdi") arg1,
+                    in("rsi") arg2,
+                    in("rdx") arg3,
                 );
                 #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
                 compile_error!("not implemented");
@@ -112,26 +116,27 @@ macro_rules! syscall3 {
 
 macro_rules! syscall4 {
     ($name:ident, $nr:expr) => {
-        pub extern "C" fn $name(arg1: impl Into<usize>, arg2: impl Into<usize>, arg3: impl Into<usize>, arg4: impl Into<usize>) {
+        #[no_mangle]
+        pub extern "C" fn $name(arg1: usize, arg2: usize, arg3: usize, arg4: usize) {
             unsafe {
                 #[cfg(target_arch = "aarch64")]
                 asm!(
                     "mov x0, #0",
                     "svc #0",
                     in("w8") $nr,
-                    in("x0") arg1.into(),
-                    in("x1") arg2.into(),
-                    in("x2") arg3.into(),
-                    in("x3") arg4.into(),
+                    in("x0") arg1,
+                    in("x1") arg2,
+                    in("x2") arg3,
+                    in("x3") arg4,
                 );
                 #[cfg(target_arch = "x86_64")]
                 asm!(
                     "syscall",
                     in("rax") $nr,
-                    in("rdi") arg1.into(),
-                    in("rsi") arg2.into(),
-                    in("rdx") arg3.into(),
-                    in("r10") arg4.into(),
+                    in("rdi") arg1,
+                    in("rsi") arg2,
+                    in("rdx") arg3,
+                    in("r10") arg4,
                 );
                 #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
                 compile_error!("not implemented");
@@ -142,28 +147,29 @@ macro_rules! syscall4 {
 
 macro_rules! syscall5 {
     ($name:ident, $nr:expr) => {
-        pub extern "C" fn $name(arg1: impl Into<usize>, arg2: impl Into<usize>, arg3: impl Into<usize>, arg4: impl Into<usize>, arg5: impl Into<usize>) {
+        #[no_mangle]
+        pub extern "C" fn $name(arg1: usize, arg2: usize, arg3: usize, arg4: usize, arg5: usize) {
             unsafe {
                 #[cfg(target_arch = "aarch64")]
                 asm!(
                     "mov x0, #0",
                     "svc #0",
                     in("w8") $nr,
-                    in("x0") arg1.into(),
-                    in("x1") arg2.into(),
-                    in("x2") arg3.into(),
-                    in("x3") arg4.into(),
-                    in("x4") arg5.into(),
+                    in("x0") arg1,
+                    in("x1") arg2,
+                    in("x2") arg3,
+                    in("x3") arg4,
+                    in("x4") arg5,
                 );
                 #[cfg(target_arch = "x86_64")]
                 asm!(
                     "syscall",
                     in("rax") $nr,
-                    in("rdi") arg1.into(),
-                    in("rsi") arg2.into(),
-                    in("rdx") arg3.into(),
-                    in("r10") arg4.into(),
-                    in("r9") arg5.into(),
+                    in("rdi") arg1,
+                    in("rsi") arg2,
+                    in("rdx") arg3,
+                    in("r10") arg4,
+                    in("r9") arg5,
                 );
                 #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
                 compile_error!("not implemented");
@@ -174,30 +180,31 @@ macro_rules! syscall5 {
 
 macro_rules! syscall6 {
     ($name:ident, $nr:expr) => {
-        pub extern "C" fn $name(arg1: impl Into<usize>, arg2: impl Into<usize>, arg3: impl Into<usize>, arg4: impl Into<usize>, arg5: impl Into<usize>, arg6: impl Into<usize>) {
+        #[no_mangle]
+        pub extern "C" fn $name(arg1: usize, arg2: usize, arg3: usize, arg4: usize, arg5: usize, arg6: usize) {
             unsafe {
                 #[cfg(target_arch = "aarch64")]
                 asm!(
                     "mov x0, #0",
                     "svc #0",
                     in("w8") $nr,
-                    in("x0") arg1.into(),
-                    in("x1") arg2.into(),
-                    in("x2") arg3.into(),
-                    in("x3") arg4.into(),
-                    in("x4") arg5.into(),
-                    in("x5") arg6.into(),
+                    in("x0") arg1,
+                    in("x1") arg2,
+                    in("x2") arg3,
+                    in("x3") arg4,
+                    in("x4") arg5,
+                    in("x5") arg6,
                 );
                 #[cfg(target_arch = "x86_64")]
                 asm!(
                     "syscall",
                     in("rax") $nr,
-                    in("rdi") arg1.into(),
-                    in("rsi") arg2.into(),
-                    in("rdx") arg3.into(),
-                    in("r10") arg4.into(),
-                    in("r9") arg5.into(),
-                    in("r8") arg6.into(),
+                    in("rdi") arg1,
+                    in("rsi") arg2,
+                    in("rdx") arg3,
+                    in("r10") arg4,
+                    in("r9") arg5,
+                    in("r8") arg6,
                 );
                 #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
                 compile_error!("not implemented");
