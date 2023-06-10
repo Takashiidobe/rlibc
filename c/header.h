@@ -24,5 +24,3 @@ uintptr_t strlen(const CChar *s);
 void print(const CChar *print_str);
 
 void vec(void);
-
-void eh_personality(void);
