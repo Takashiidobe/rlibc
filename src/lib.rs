@@ -1,6 +1,8 @@
 #![feature(lang_items)]
 #![feature(core_intrinsics)]
 #![feature(vec_into_raw_parts)]
+#![feature(ptr_sub_ptr)]
+#![feature(c_variadic)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "core")]
@@ -59,39 +61,13 @@ pub type CChar = ::core::ffi::c_char;
 // Ref CString
 pub type CStr = ::core::ffi::CStr;
 
-#[no_mangle]
-pub extern "C" fn abs(i: CInt) -> CInt {
-    i.abs()
-}
-
-#[no_mangle]
-pub extern "C" fn add(a: u32, b: u32) -> u32 {
-    a + b
-}
-
-#[no_mangle]
-pub extern "C" fn isupper(c: CInt) -> bool {
-    (c as u32 - b'A' as u32) < 26
-}
+// Ref CString
+pub type CVoid = ::core::ffi::c_void;
 
 #[cfg(feature = "alloc")]
-use alloc::{fmt, string::String, vec, vec::Vec};
+use alloc::{fmt, slice, string::String, vec, vec::Vec};
 
-#[cfg(feature = "alloc")]
-use libc_print::std_name::{dbg, eprintln, println};
-
-#[no_mangle]
-#[cfg(feature = "alloc")]
-pub extern "C" fn test_vec() {
-    let mut v = vec![1, 2, 3];
-    let res = v.pop();
-}
-
-#[no_mangle]
-#[cfg(feature = "alloc")]
-pub extern "C" fn format() {
-    println!("Hi");
-}
+use libc_print::std_name::{dbg, eprintln, print, println};
 
 /// # Safety
 /// Very safe
@@ -113,6 +89,26 @@ pub extern "C" fn rand_u64() -> u64 {
 }
 
 #[no_mangle]
+pub extern "C" fn printrs(s: *const CChar) {
+    print!("{}", cchar_to_cstr(s));
+}
+
+#[no_mangle]
+pub extern "C" fn printrsln(s: *const CChar) {
+    println!("{}", cchar_to_cstr(s));
+}
+
+#[no_mangle]
+/// # Safety
+/// Safe
+pub unsafe extern "C" fn rand_range(start: CULongLong, end: CULongLong) -> CULongLong {
+    use nanorand::{Rng, WyRand};
+
+    let mut rng = WyRand::new();
+    rng.generate_range(start..=end)
+}
+
+#[no_mangle]
 /// # Safety
 /// Safe
 pub unsafe extern "C" fn shuffle(
@@ -120,36 +116,112 @@ pub unsafe extern "C" fn shuffle(
     size: usize,
     c_array: &mut CArray,
 ) {
+    use core::ops::Range;
     use nanorand::{Rng, WyRand};
+
     let mut rng = WyRand::new();
-    let mut items = unsafe { Vec::from_raw_parts(array_pointer, size, size) };
+    let mut items = unsafe { slice::from_raw_parts_mut(array_pointer, size) };
+
     rng.shuffle(&mut items);
-    let (ptr, size, _capacity) = items.into_raw_parts();
-    c_array.ptr = ptr;
-    c_array.size = size;
+
+    let Range { start, end } = items.as_mut_ptr_range();
+
+    c_array.ptr = start;
+    c_array.size = end.sub_ptr(start) as u64;
 }
 
 #[repr(C)]
 pub struct CArray {
     ptr: *mut CULongLong,
-    size: usize,
+    size: CULongLong,
+}
+
+impl CArray {
+    #[no_mangle]
+    pub extern "C" fn new_carray() -> CArray {
+        CArray {
+            ptr: core::ptr::null_mut(),
+            size: 0,
+        }
+    }
 }
 
 #[repr(C)]
 pub struct CVec {
     ptr: *mut CULongLong,
-    size: usize,
-    capacity: usize,
+    size: CULongLong,
+    capacity: CULongLong,
 }
 
-#[no_mangle]
-pub extern "C" fn print(print_str: *const CChar) {
-    let str_to_print = cchar_to_cstr(print_str);
-    println!("{}", str_to_print);
+impl CVec {
+    #[no_mangle]
+    pub extern "C" fn cvec_new() -> Self {
+        Self::default()
+    }
+
+    #[no_mangle]
+    pub extern "C" fn cvec_from(
+        ptr: *mut CULongLong,
+        size: CULongLong,
+        capacity: CULongLong,
+    ) -> Self {
+        Self {
+            ptr,
+            size,
+            capacity,
+        }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn cvec_push(vector: &mut CVec, item: u64) {
+        let mut v = unsafe {
+            Vec::from_raw_parts(vector.ptr, vector.size as usize, vector.capacity as usize)
+        };
+        v.push(item);
+        let (ptr, size, capacity) = v.into_raw_parts();
+        vector.ptr = ptr;
+        vector.size = size as u64;
+        vector.capacity = capacity as u64;
+    }
+
+    #[no_mangle]
+    pub extern "C" fn cvec_get(vector: &CVec, index: usize) -> u64 {
+        unsafe { vector.ptr.offset(index.try_into().unwrap()).read() }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn cvec_set(vector: &CVec, index: usize, item: u64) {
+        unsafe { vector.ptr.offset(index.try_into().unwrap()).write(item) }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn cvec_pop(vector: &mut CVec) -> u64 {
+        vector.size -= 1;
+        unsafe { vector.ptr.offset(vector.size.try_into().unwrap()).read() }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn cvec_last(vector: &CVec) -> u64 {
+        unsafe { vector.ptr.offset(vector.size.try_into().unwrap()).read() }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn cvec_clear(vector: &mut CVec) {
+        vector.size = 0;
+        vector.capacity = 0;
+        vector.ptr = core::ptr::null_mut();
+    }
 }
 
-pub mod syscall;
-pub use syscall::*;
+impl Default for CVec {
+    fn default() -> Self {
+        CVec {
+            ptr: core::ptr::null_mut(),
+            size: 0,
+            capacity: 0,
+        }
+    }
+}
 
 fn cchar_to_cstr(c: *const CChar) -> &'static str {
     unsafe { core::ffi::CStr::from_ptr(c) }
@@ -164,7 +236,9 @@ pub extern "C" fn print_async(print_str: *const CChar) {
 
     let runtime = Runtime::new();
 
-    let mut task = Task::new(async { println!("{}", cchar_to_cstr(print_str)) });
+    let mut task = Task::new(async {
+        printrsln(print_str);
+    });
 
     let handle = task.spawn(&runtime);
 
@@ -176,37 +250,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_abs() {
-        assert_eq!(abs(-2), 2);
-    }
-
-    #[test]
-    fn test_addition() {
-        assert_eq!(add(3, 5), 8);
-    }
-
-    #[test]
-    fn test_isupper() {
-        assert!(isupper('A' as CInt));
-    }
-
-    #[test]
-    fn test_isupper_a() {
-        assert!(!isupper('a' as CInt));
-    }
-
-    #[test]
     fn test_strlen() {
         let input = CStr::from_bytes_with_nul(b"\0").unwrap();
         assert_eq!(unsafe { strlen(input.as_ptr()) }, 0);
-    }
-
-    #[test]
-    fn syscalls() {
-        let string = "Hello World\n";
-
-        let ptr = string.as_ptr() as usize;
-        let len = string.len();
-        write(1usize, ptr, len);
     }
 }
