@@ -138,11 +138,26 @@ pub struct CArray {
 
 impl CArray {
     #[no_mangle]
-    pub extern "C" fn new_carray() -> CArray {
+    pub extern "C" fn carray_new() -> CArray {
         CArray {
             ptr: core::ptr::null_mut(),
             size: 0,
         }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn carray_get(array: &CArray, index: usize) -> u64 {
+        unsafe { array.ptr.offset(index.try_into().unwrap()).read() }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn carray_set(array: &CArray, index: usize, item: u64) {
+        unsafe { array.ptr.offset(index.try_into().unwrap()).write(item) }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn carray_from(ptr: *mut CULongLong, size: CULongLong) -> Self {
+        Self { ptr, size }
     }
 }
 
